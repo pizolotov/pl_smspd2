@@ -1,6 +1,17 @@
 from phidl import Device
 from phidl import quickplot as qp # Rename "quickplot()" to the easier "qp()"
 import phidl.geometry as pg
+from matplotlib import pyplot as plt
+
+###
+#Chip window -  1578.00000	2825.00000
+#               1422.00000	2825.00000
+#               1422.00000	2675.00000
+#               1578.00000	2675.00000
+
+window_center = [1422 + (1578 - 1422)/2, 2675 + (2825 -  2675)/2]
+###
+
 
 Markhorizontal = Device()
 
@@ -8,9 +19,6 @@ xpts = (0   , 137,  137,    0,  0,   27,    27,     87,     87,     27,     27, 
 ypts = (2613, 2613, 2887, 2887, 2837, 2837, 2777,   2777,   2723,   2723,   2663,   2663,   2613)
 Markhorizontal.add_polygon( [xpts, ypts], layer = 0)
 #markleft = Marks.add_polygon( [xpts, ypts], layer = 0)
-
-
-
 
 Markvertical = Device()
 
@@ -68,30 +76,48 @@ Centralcontact = Chip_prelim.add_ref(Centralcontact)
 Groundcontact = Chip_prelim.add_ref(Groundcontact)
 Markslayot = Chip_prelim.add_ref(Markslayot)
 
+###
+w_sspd = 1
+ff = 0.5
+###
 
-
-
-Meander = pg.snspd(wire_width = 1, wire_pitch = 2, size = (55,55),
+Meander = pg.snspd(wire_width = w_sspd, wire_pitch = w_sspd/ff, size = (55,55),
         num_squares = None, turn_ratio = 4,
         terminals_same_side = False, layer = 0)
-
+#Centering and rotating
+Meander.rotate(90)
+Meander.movex(window_center[0] + (Meander.ports[1].x-Meander.ports[2].x)/2 )
+Meander.movey(window_center[1] - (Meander.ports[1].y+Meander.ports[2].y)/2 )
+###
 Terminal = pg.optimal_step(start_width = 1, end_width = 30, num_pts = 500, width_tol = 1e-3,
                  anticrowding_factor = 2, symmetric = False, layer = 0)
 
 
+#center = pg.circle(1,2.5)
+#center.movex(window_center[0])
+#center.movey(window_center[1])
+#center_point = Chip_prelim.add_ref(center)
 
 detector = Chip_prelim.add_ref(Meander)
-detector.rotate(90)
-detector.move([1480,2750])
-
 terminal1 = Chip_prelim.add_ref(Terminal)
 terminal2 = Chip_prelim.add_ref(Terminal)
 
 terminal1.connect(port = 1, destination = detector.ports[1])
 terminal2.connect(port = 1, destination = detector.ports[2])
 
-qp(Chip_prelim)
+#Union of structures
+Chip_prelim = pg.union(Chip_prelim, by_layer=True)
+###
+
+#Chip inversion
+full_chip = pg.rectangle([3000, 4000])
+Chip_prelim = pg.xor_diff(full_chip, Chip_prelim)
 
 
+#qp(Chip_prelim)
+#plt.show()
+###
+Chip_prelim.flatten()
+###
 
-#Chip_prelim.write_gds(filename = 'triple-bend.gds')
+Chip_prelim.write_gds(filename = 'triple-bend.gds')
