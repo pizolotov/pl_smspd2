@@ -89,7 +89,7 @@ Meander.rotate(90)
 Meander.movex(window_center[0] + (Meander.ports[1].x-Meander.ports[2].x)/2 )
 Meander.movey(window_center[1] - (Meander.ports[1].y+Meander.ports[2].y)/2 )
 ###
-Terminal = pg.optimal_step(start_width = 1, end_width = 30, num_pts = 500, width_tol = 1e-3,
+Terminal = pg.optimal_step(start_width = w_sspd, end_width = 30, num_pts = 500, width_tol = 1e-3,
                  anticrowding_factor = 2, symmetric = False, layer = 0)
 
 
