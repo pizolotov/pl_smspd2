@@ -1,6 +1,17 @@
 from phidl import Device
 from phidl import quickplot as qp # Rename "quickplot()" to the easier "qp()"
 import phidl.geometry as pg
+from matplotlib import pyplot as plt
+
+###
+#Chip window -  1578.00000	2825.00000
+#               1422.00000	2825.00000
+#               1422.00000	2675.00000
+#               1578.00000	2675.00000
+
+window_center = [1422 + (1578 - 1422)/2, 2675 + (2825 -  2675)/2]
+###
+
 
 Markhorizontal = Device()
 
@@ -8,9 +19,6 @@ xpts = (0   , 137,  137,    0,  0,   27,    27,     87,     87,     27,     27, 
 ypts = (2613, 2613, 2887, 2887, 2837, 2837, 2777,   2777,   2723,   2723,   2663,   2663,   2613)
 Markhorizontal.add_polygon( [xpts, ypts], layer = 0)
 #markleft = Marks.add_polygon( [xpts, ypts], layer = 0)
-
-
-
 
 Markvertical = Device()
 
@@ -68,48 +76,55 @@ Centralcontact = Chip_prelim.add_ref(Centralcontact)
 Groundcontact = Chip_prelim.add_ref(Groundcontact)
 Markslayot = Chip_prelim.add_ref(Markslayot)
 
+###
+w_detector = 10
+w_line = 15
+ff = 0.5
+
+###
+
+Sensitivearea = pg.flagpole(size = (20,650), stub_size = (w_detector,50), shape = 'p', taper_type = 'fillet', layer = 0)
+# taper_type should be None, 'fillet', or 'straight'
 
 
-Square = pg.straight(size = (10, 10), layer = 0)
-Square.rotate(90)
+#Centering and rotating
+Sensitivearea.rotate(270)
+Sensitivearea.movex(window_center[0] + (Sensitivearea.ports[1].x-Sensitivearea.ports[2].x)/2 + 100)
+Sensitivearea.movey(window_center[1] - (Sensitivearea.ports[1].y+Sensitivearea.ports[2].y)/2 )
+###
 
-iw = 12
-
-
-Inductance = pg.snspd(wire_width = iw, wire_pitch = 20, size = None,
-        num_squares = 600, turn_ratio = 4,
+turn = pg.optimal_90deg(width = w_line, num_pts = 15, length_adjust = 1, layer = 0)
+inductance = pg.snspd(wire_width = w_line, wire_pitch = 2*w_line, size = (2300,150),
+        num_squares = None, turn_ratio = 4,
         terminals_same_side = True, layer = 0)
 
-Terminal = pg.optimal_step(start_width = iw, end_width = 10, num_pts = 500, width_tol = 1e-3,
-                 anticrowding_factor = 2, symmetric = False, layer = 0)
 
-# Turn = pg.optimal_90deg(width = iw, num_pts = 50, length_adjust = 1, layer = 0)
+#center = pg.circle(1,2.5)
+#center.movex(window_center[0])
+#center.movey(window_center[1])
+#center_point = Chip_prelim.add_ref(center)
 
-
-
-# detector = Chip_prelim.add_ref(Meander)
-# detector.rotate(90)
-# detector.move([1460,2720])
-
-terminal1 = Square.add_ref(Terminal)
-terminal2 = Square.add_ref(Terminal)
-inductance1 = Square.add_ref(Inductance)
-inductance2 = Square.add_ref(Inductance)
-# turn1 = Square.add_ref(Turn)
-# turn2 = Square.add_ref(Turn)
-
-terminal1.connect(port = 2, destination = Square.ports[1])
-# turn1.connect(port = 1, destination = terminal1.ports[1])
-# inductance1.connect(port = 1, destination = turn1.ports[2])
-inductance1.connect(port = 1, destination = terminal1.ports[1])
-
-terminal2.connect(port = 2, destination = Square.ports[2])
-# turn2.connect(port = 2, destination = terminal2.ports[1])
-# inductance2.connect(port = 2, destination = turn2.ports[1])
-inductance2.connect(port = 1, destination = terminal2.ports[1])
-
-qp(Square)
+detector = Chip_prelim.add_ref(Sensitivearea)
+turn = Chip_prelim.add_ref(turn)
+inductance = Chip_prelim.add_ref(inductance)
 
 
 
-#Chip_prelim.write_gds(filename = 'triple-bend.gds')
+turn.connect(port = 2, destination = detector.ports[2])
+inductance.connect(port = 2, destination = turn.ports[1])
+
+
+#Union of structures
+Chip_prelim = pg.union(Chip_prelim, by_layer=True)
+###
+
+#Chip inversion
+full_chip = pg.rectangle([3000, 4000])
+Chip_prelim = pg.xor_diff(full_chip, Chip_prelim)
+
+
+qp(Chip_prelim)
+#plt.show()
+###
+Chip_prelim.flatten()
+###
