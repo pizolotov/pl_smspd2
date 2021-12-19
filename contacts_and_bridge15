@@ -90,8 +90,8 @@ Sensitivearea = pg.optimal_step(start_width = w_detector, end_width = w_line, nu
 
 #Centering and rotating
 Sensitivearea.rotate(90)
-Sensitivearea.movex(window_center[0] + (Sensitivearea.ports[1].x-Sensitivearea.ports[2].x)/2 )
-Sensitivearea.movey(window_center[1] - (Sensitivearea.ports[1].y+Sensitivearea.ports[2].y)/2 + 120 )
+Sensitivearea.movex(window_center[0] )
+Sensitivearea.movey(window_center[1] )
 ###
 
 
